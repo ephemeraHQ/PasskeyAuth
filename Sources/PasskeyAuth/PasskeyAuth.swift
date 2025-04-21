@@ -147,11 +147,12 @@ public actor PasskeyAuth {
         
         let controller = ASAuthorizationController(authorizationRequests: [request])
         controller.presentationContextProvider = presentationContextProvider
+        let asyncController = AsyncAuthorizationController(controller: controller)
         
         setAuthenticating(true)
         
         do {
-            let authResponse = try await controller.performRequestsAsync()
+            let authResponse = try await asyncController.performRequests()
             switch authResponse {
             case .registration(let registration):
                 guard let rawAttestationObject = registration.rawAttestationObject else {
@@ -229,11 +230,12 @@ public actor PasskeyAuth {
         
         let controller = ASAuthorizationController(authorizationRequests: [request])
         controller.presentationContextProvider = presentationContextProvider
+        let asyncController = AsyncAuthorizationController(controller: controller)
         
         setAuthenticating(true)
         
         do {
-            let authResponse = try await controller.performRequestsAsync()
+            let authResponse = try await asyncController.performRequests()
             switch authResponse {
             case .assertion(let assertion):
                 let response = try await self.postLoginData(

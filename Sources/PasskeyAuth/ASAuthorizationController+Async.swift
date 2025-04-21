@@ -7,28 +7,29 @@ public enum ASAuthorizationResponse {
     case assertion(ASAuthorizationPlatformPublicKeyCredentialAssertion)
 }
 
-extension ASAuthorizationController {
+/// A wrapper class around ASAuthorizationController that provides async/await functionality
+public final class AsyncAuthorizationController {
+    private let controller: ASAuthorizationController
+    private var delegate: AsyncAuthorizationDelegate?
+    
+    public init(controller: ASAuthorizationController) {
+        self.controller = controller
+    }
+    
     /// Performs authorization requests asynchronously
     /// - Parameter requests: The authorization requests to perform
     /// - Returns: An ASAuthorizationResponse containing the result of the authorization
     /// - Throws: ASAuthorizationError if the authorization fails
-    public func performRequestsAsync() async throws -> ASAuthorizationResponse {
+    public func performRequests() async throws -> ASAuthorizationResponse {
         try await withCheckedThrowingContinuation { continuation in
             Task { @MainActor in
                 let delegate = AsyncAuthorizationDelegate { result in
                     continuation.resume(with: result)
                 }
                 
-                // Store the delegate as an associated object to prevent it from being deallocated
-                objc_setAssociatedObject(
-                    self,
-                    &AssociatedKeys.delegateKey,
-                    delegate,
-                    .OBJC_ASSOCIATION_RETAIN_NONATOMIC
-                )
-                
                 self.delegate = delegate
-                self.performRequests()
+                self.controller.delegate = delegate
+                self.controller.performRequests()
             }
         }
     }
