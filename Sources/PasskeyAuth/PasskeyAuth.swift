@@ -4,14 +4,14 @@ import CryptoKit
 
 private final class PasskeyAuthDelegate: NSObject, ASAuthorizationControllerDelegate {
     private let passkeyAuth: PasskeyAuth
-    var continuation: CheckedContinuation<PasskeyResponse, Error>?
+    private(set) var continuation: CheckedContinuation<PasskeyResponse, Error>?
     
     init(passkeyAuth: PasskeyAuth) {
         self.passkeyAuth = passkeyAuth
         super.init()
     }
     
-    func setContinuation(_ continuation: CheckedContinuation<PasskeyResponse, Error>) {
+    func setContinuation(_ continuation: CheckedContinuation<PasskeyResponse, Error>?) {
         self.continuation = continuation
     }
     
@@ -308,7 +308,7 @@ public actor PasskeyAuth {
         attestationObject: Data,
         clientDataJSON: Data
     ) async throws {
-        defer { Task { await self.setAuthenticating(false) } }
+        defer { self.setAuthenticating(false) }
         
         guard let url = URL(string: "\(configuration.baseURL)\(configuration.endpoints.registerPasskey)") else {
             throw PasskeyError.invalidURL("Failed to create URL for passkey registration")
@@ -353,7 +353,7 @@ public actor PasskeyAuth {
         
         let passkeyResponse = try JSONDecoder().decode(PasskeyResponse.self, from: data)
         await self.delegate?.continuation?.resume(returning: passkeyResponse)
-        await self.delegate?.continuation = nil
+        await self.delegate?.setContinuation(nil)
     }
     
     func postLoginData(
@@ -362,7 +362,7 @@ public actor PasskeyAuth {
         clientDataJSON: Data,
         signature: Data
     ) async throws {
-        defer { Task { await self.setAuthenticating(false) } }
+        defer { self.setAuthenticating(false) }
         
         guard let url = URL(string: "\(configuration.baseURL)\(configuration.endpoints.loginPasskey)") else {
             throw PasskeyError.invalidURL("Failed to create URL for passkey login")
@@ -409,6 +409,6 @@ public actor PasskeyAuth {
         
         let passkeyResponse = try JSONDecoder().decode(PasskeyResponse.self, from: data)
         await self.delegate?.continuation?.resume(returning: passkeyResponse)
-        await self.delegate?.continuation = nil
+        await self.delegate?.setContinuation(nil)
     }
 }

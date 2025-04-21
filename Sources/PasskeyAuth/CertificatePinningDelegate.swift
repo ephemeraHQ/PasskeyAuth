@@ -45,7 +45,6 @@ internal class CertificatePinningDelegate: NSObject, URLSessionDelegate {
             return
         }
         
-        // Verify the certificate chain
         var result: SecTrustResultType = .invalid
         let status = SecTrustEvaluate(serverTrust, &result)
         guard status == errSecSuccess,
