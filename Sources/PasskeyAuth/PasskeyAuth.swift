@@ -2,69 +2,6 @@ import Foundation
 import AuthenticationServices
 import CryptoKit
 
-private final class PasskeyAuthDelegate: NSObject, ASAuthorizationControllerDelegate {
-    private let passkeyAuth: PasskeyAuth
-    private(set) var continuation: CheckedContinuation<PasskeyResponse, Error>?
-    
-    init(passkeyAuth: PasskeyAuth) {
-        self.passkeyAuth = passkeyAuth
-        super.init()
-    }
-    
-    func setContinuation(_ continuation: CheckedContinuation<PasskeyResponse, Error>?) {
-        self.continuation = continuation
-    }
-    
-    func authorizationController(
-        controller: ASAuthorizationController,
-        didCompleteWithAuthorization authorization: ASAuthorization
-    ) {
-        Task { @MainActor in
-            if let registration = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration {
-                guard let rawAttestationObject = registration.rawAttestationObject else {
-                    continuation?.resume(throwing: PasskeyError.registrationFailed("Missing attestation object"))
-                    continuation = nil
-                    return
-                }
-                
-                do {
-                    try await passkeyAuth.postRegisterData(
-                        credentialID: registration.credentialID,
-                        attestationObject: rawAttestationObject,
-                        clientDataJSON: registration.rawClientDataJSON
-                    )
-                } catch {
-                    continuation?.resume(throwing: error)
-                    continuation = nil
-                }
-            } else if let assertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion {
-                do {
-                    try await passkeyAuth.postLoginData(
-                        credentialID: assertion.credentialID,
-                        authenticatorData: assertion.rawAuthenticatorData,
-                        clientDataJSON: assertion.rawClientDataJSON,
-                        signature: assertion.signature
-                    )
-                } catch {
-                    continuation?.resume(throwing: error)
-                    continuation = nil
-                }
-            }
-        }
-    }
-    
-    func authorizationController(
-        controller: ASAuthorizationController,
-        didCompleteWithError error: Error
-    ) {
-        Task { @MainActor in
-            await passkeyAuth.setAuthenticating(false)
-            continuation?.resume(throwing: PasskeyError.authenticationFailed(error.localizedDescription))
-            continuation = nil
-        }
-    }
-}
-
 /// A class that handles passkey authentication
 /// - Thread Safety: This class is thread-safe through the use of Swift's actor system.
 ///   All public methods can be called from any thread, and UI-related operations are automatically
@@ -75,7 +12,6 @@ public actor PasskeyAuth {
     private var isAuthenticating: Bool = false
     /// The presentation context provider for the passkey authentication
     private var presentationContextProvider: PasskeyPresentationContextProvider?
-    private var delegate: PasskeyAuthDelegate?
     private let certificatePinningDelegate: CertificatePinningDelegate?
     private let logger: PasskeyAuthLogger.Logger
     
@@ -118,8 +54,6 @@ public actor PasskeyAuth {
         guard !configuration.rpID.isEmpty else {
             fatalError("RP ID cannot be empty")
         }
-        
-        self.delegate = PasskeyAuthDelegate(passkeyAuth: self)
     }
     
     /// Sets the presentation context provider for the passkey authentication
@@ -200,30 +134,42 @@ public actor PasskeyAuth {
             throw PasskeyError.invalidChallenge("Failed to decode challenge")
         }
         
-        return try await withCheckedThrowingContinuation { continuation in
-            Task { @MainActor in
-                let provider = ASAuthorizationPlatformPublicKeyCredentialProvider(
-                    relyingPartyIdentifier: self.configuration.rpID
+        let provider = ASAuthorizationPlatformPublicKeyCredentialProvider(
+            relyingPartyIdentifier: self.configuration.rpID
+        )
+        
+        let request = provider.createCredentialRegistrationRequest(
+            challenge: challengeData,
+            name: displayName,
+            userID: UUID().uuidString.data(using: .utf8)!
+        )
+        request.userVerificationPreference = self.configuration.userVerificationPreference
+        
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        controller.presentationContextProvider = presentationContextProvider
+        
+        setAuthenticating(true)
+        
+        do {
+            let authResponse = try await controller.performRequestsAsync()
+            switch authResponse {
+            case .registration(let registration):
+                guard let rawAttestationObject = registration.rawAttestationObject else {
+                    throw PasskeyError.registrationFailed("Missing attestation object")
+                }
+                
+                let response = try await self.postRegisterData(
+                    credentialID: registration.credentialID,
+                    attestationObject: rawAttestationObject,
+                    clientDataJSON: registration.rawClientDataJSON
                 )
-                
-                let request = provider.createCredentialRegistrationRequest(
-                    challenge: challengeData,
-                    name: displayName,
-                    userID: UUID().uuidString.data(using: .utf8)!
-                )
-                request.userVerificationPreference = self.configuration.userVerificationPreference
-                
-                let controller = ASAuthorizationController(authorizationRequests: [request])
-                controller.delegate = await self.delegate
-                controller.presentationContextProvider = presentationContextProvider
-                
-                // Set up the continuation before setting isAuthenticating
-                await self.delegate?.setContinuation(continuation)
-                
-                // Set authenticating state
-                await self.setAuthenticating(true)
-                controller.performRequests()
+                return response
+                //                    continuation.resume(returning: response)
+            case .assertion:
+                throw PasskeyError.registrationFailed("Unexpected assertion response")
             }
+        } catch {
+            throw PasskeyError.registrationFailed("Registration failed")
         }
     }
     
@@ -274,26 +220,34 @@ public actor PasskeyAuth {
             throw PasskeyError.invalidChallenge("Failed to decode challenge")
         }
         
-        return try await withCheckedThrowingContinuation { continuation in
-            Task { @MainActor in
-                let provider = ASAuthorizationPlatformPublicKeyCredentialProvider(
-                    relyingPartyIdentifier: self.configuration.rpID
+        let provider = ASAuthorizationPlatformPublicKeyCredentialProvider(
+            relyingPartyIdentifier: self.configuration.rpID
+        )
+        
+        let request = provider.createCredentialAssertionRequest(challenge: challengeData)
+        request.userVerificationPreference = self.configuration.userVerificationPreference
+        
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        controller.presentationContextProvider = presentationContextProvider
+        
+        setAuthenticating(true)
+        
+        do {
+            let authResponse = try await controller.performRequestsAsync()
+            switch authResponse {
+            case .assertion(let assertion):
+                let response = try await self.postLoginData(
+                    credentialID: assertion.credentialID,
+                    authenticatorData: assertion.rawAuthenticatorData,
+                    clientDataJSON: assertion.rawClientDataJSON,
+                    signature: assertion.signature
                 )
-                
-                let request = provider.createCredentialAssertionRequest(challenge: challengeData)
-                request.userVerificationPreference = self.configuration.userVerificationPreference
-                
-                let controller = ASAuthorizationController(authorizationRequests: [request])
-                controller.delegate = await self.delegate
-                controller.presentationContextProvider = presentationContextProvider
-                
-                // Set up the continuation before setting isAuthenticating
-                await self.delegate?.setContinuation(continuation)
-                
-                // Set authenticating state
-                await self.setAuthenticating(true)
-                controller.performRequests()
+                return response
+            case .registration:
+                throw PasskeyError.authenticationFailed("Unexpected registration response")
             }
+        } catch {
+            throw PasskeyError.authenticationFailed("Login failed")
         }
     }
     
@@ -307,7 +261,7 @@ public actor PasskeyAuth {
         credentialID: Data,
         attestationObject: Data,
         clientDataJSON: Data
-    ) async throws {
+    ) async throws -> PasskeyResponse {
         defer { self.setAuthenticating(false) }
         
         guard let url = URL(string: "\(configuration.baseURL)\(configuration.endpoints.registerPasskey)") else {
@@ -351,9 +305,7 @@ public actor PasskeyAuth {
             )
         }
         
-        let passkeyResponse = try JSONDecoder().decode(PasskeyResponse.self, from: data)
-        await self.delegate?.continuation?.resume(returning: passkeyResponse)
-        await self.delegate?.setContinuation(nil)
+        return try JSONDecoder().decode(PasskeyResponse.self, from: data)
     }
     
     func postLoginData(
@@ -361,7 +313,7 @@ public actor PasskeyAuth {
         authenticatorData: Data,
         clientDataJSON: Data,
         signature: Data
-    ) async throws {
+    ) async throws -> PasskeyResponse {
         defer { self.setAuthenticating(false) }
         
         guard let url = URL(string: "\(configuration.baseURL)\(configuration.endpoints.loginPasskey)") else {
@@ -407,8 +359,6 @@ public actor PasskeyAuth {
             )
         }
         
-        let passkeyResponse = try JSONDecoder().decode(PasskeyResponse.self, from: data)
-        await self.delegate?.continuation?.resume(returning: passkeyResponse)
-        await self.delegate?.setContinuation(nil)
+        return try JSONDecoder().decode(PasskeyResponse.self, from: data)
     }
 }

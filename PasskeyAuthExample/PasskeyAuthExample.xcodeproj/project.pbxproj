@@ -13,6 +13,7 @@
 		7A731E9C2DB5C58C00E10B4E /* PasskeyAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 7A731E9B2DB5C58C00E10B4E /* PasskeyAuth */; };
 		7A731E9F2DB5C78A00E10B4E /* PasskeyAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 7A731E9E2DB5C78A00E10B4E /* PasskeyAuth */; };
 		7A731EA22DB5C9C300E10B4E /* PasskeyAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 7A731EA12DB5C9C300E10B4E /* PasskeyAuth */; };
+		7A8257252DB6A426009E4E17 /* PasskeyAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 7A8257242DB6A426009E4E17 /* PasskeyAuth */; };
 		7ACB00D82DB43D2A00387035 /* PasskeyAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 7ACB00D72DB43D2A00387035 /* PasskeyAuth */; };
 /* End PBXBuildFile section */
 
@@ -38,6 +39,7 @@
 				7A731E9C2DB5C58C00E10B4E /* PasskeyAuth in Frameworks */,
 				7A731EA22DB5C9C300E10B4E /* PasskeyAuth in Frameworks */,
 				7A731DC92DB4B0EB00E10B4E /* PasskeyAuth in Frameworks */,
+				7A8257252DB6A426009E4E17 /* PasskeyAuth in Frameworks */,
 				7ACB00D82DB43D2A00387035 /* PasskeyAuth in Frameworks */,
 				7A597A962DB372D8001EDC03 /* PasskeyAuth in Frameworks */,
 			);
@@ -89,6 +91,7 @@
 				7A731E9B2DB5C58C00E10B4E /* PasskeyAuth */,
 				7A731E9E2DB5C78A00E10B4E /* PasskeyAuth */,
 				7A731EA12DB5C9C300E10B4E /* PasskeyAuth */,
+				7A8257242DB6A426009E4E17 /* PasskeyAuth */,
 			);
 			productName = PasskeyAuthExample;
 			productReference = 7A597A3E2DB35F21001EDC03 /* PasskeyAuthExample.app */;
@@ -119,7 +122,7 @@
 			mainGroup = 7A597A352DB35F21001EDC03;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				7A731EA02DB5C9C300E10B4E /* XCLocalSwiftPackageReference "../../PasskeyAuth" */,
+				7A8257232DB6A426009E4E17 /* XCLocalSwiftPackageReference "../../PasskeyAuth" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7A597A3F2DB35F21001EDC03 /* Products */;
@@ -357,7 +360,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		7A731EA02DB5C9C300E10B4E /* XCLocalSwiftPackageReference "../../PasskeyAuth" */ = {
+		7A8257232DB6A426009E4E17 /* XCLocalSwiftPackageReference "../../PasskeyAuth" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../PasskeyAuth;
 		};
@@ -385,6 +388,10 @@
 			productName = PasskeyAuth;
 		};
 		7A731EA12DB5C9C300E10B4E /* PasskeyAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PasskeyAuth;
+		};
+		7A8257242DB6A426009E4E17 /* PasskeyAuth */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = PasskeyAuth;
 		};
