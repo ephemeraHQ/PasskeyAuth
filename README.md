@@ -193,6 +193,12 @@ In production mode, the logger automatically filters out messages containing sen
 - Keys
 - Passwords
 
+Additional debug info can be included in errors with this option:
+
+```swift
+PasskeyError.setDebugMode(true) // should not be used in production
+```
+
 ## Error Handling
 
 The package provides a `PasskeyError` enum that covers common error cases:
