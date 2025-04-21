@@ -20,7 +20,8 @@ let package = Package(
             path: "Sources/PasskeyAuth"),
         .testTarget(
             name: "PasskeyAuthTests",
-            dependencies: ["PasskeyAuth"]),
+            dependencies: ["PasskeyAuth"],
+            path: "Tests/PasskeyAuthTests"),
     ],
     swiftLanguageVersions: [.v5]
 )
