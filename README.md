@@ -18,7 +18,7 @@ Add PasskeyAuth to your project using Swift Package Manager:
 2. Select your target
 3. Select the "Package Dependencies" tab
 4. Click the "+" button
-5. Enter the repository URL: `https://github.com/yourusername/PasskeyAuth.git`
+5. Enter the repository URL: `https://github.com/ephemeraHQ/PasskeyAuth.git`
 6. Click "Add Package"
 
 ## Usage
@@ -63,7 +63,7 @@ let configuration = PasskeyConfiguration(
 
 ### Initialize PasskeyAuth
 
-First, create a presentation context provider that conforms to `PasskeyPresentationContextProvider`:
+Create a presentation context provider that conforms to `PasskeyPresentationContextProvider`:
 
 ```swift
 class MyPresentationContextProvider: PasskeyPresentationContextProvider {
@@ -75,7 +75,7 @@ class MyPresentationContextProvider: PasskeyPresentationContextProvider {
 }
 ```
 
-Then create a `PasskeyAuth` instance with your configuration and presentation context provider:
+Then create a `PasskeyAuth` instance with your configuration.
 
 ```swift
 let presentationProvider = MyPresentationContextProvider(window: window)
@@ -102,9 +102,25 @@ class SwiftUIPresentationContextProvider: PasskeyPresentationContextProvider {
 }
 ```
 
+Set the presentation provider:
+
+```swift
+VStack {
+    ...
+}
+.onAppear {
+    PasskeyError.setDebugMode(true)
+    
+    Task { @MainActor in
+        let presentationProvider = SwiftUIPresentationProvider()
+        await passkeyAuth.setPresentationContextProvider(presentationProvider)
+    }
+}
+```
+
 ### Register a Passkey
 
-To register a new passkey using async/await:
+To register a new passkey:
 
 ```swift
 Task {
@@ -124,7 +140,7 @@ Task {
 
 ### Login with Passkey
 
-To login with a passkey using async/await:
+To login with a passkey:
 
 ```swift
 Task {
@@ -236,7 +252,7 @@ The package includes an example app (`PasskeyAuthExample`) that demonstrates how
    ```
    This will:
    - Generate `Secrets.swift` from your `.env` file
-   - Generate the app site association entitlements
+   - Generate the app site association entitlements file
 
 The Makefile provides several useful commands:
 - `make secrets`: Generate only the Secrets.swift file
