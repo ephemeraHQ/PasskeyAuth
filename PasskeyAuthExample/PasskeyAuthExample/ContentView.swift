@@ -147,29 +147,7 @@ struct ContentView: View {
         do {
             let configuration = try PasskeyConfiguration(
                 baseURL: URL(string: Secrets.API_BASE_URL)!,
-                rpID: Secrets.RP_ID,
-                endpoints: PasskeyEndpoints(
-                    registerChallenge: "/auth/challenge/register",
-                    loginChallenge: "/auth/challenge/login",
-                    registerPasskey: "/auth/register-passkey",
-                    loginPasskey: "/auth/login-passkey"
-                ),
-                pinnedCertificates: {
-                    logger.debug("Attempting to load certificate...")
-                    guard let certificateURL = Bundle.main.url(forResource: "passkey-auth-backend", withExtension: "cer") else {
-                        logger.error("Certificate file not found in bundle")
-                        return nil
-                    }
-                    
-                    do {
-                        let certificateData = try Data(contentsOf: certificateURL)
-                        logger.info("Certificate loaded successfully: \(certificateData.count) bytes")
-                        return [certificateData]
-                    } catch {
-                        logger.error("Failed to load certificate: \(error.localizedDescription)")
-                        return nil
-                    }
-                }()
+                rpID: Secrets.RP_ID
             )
             
             let passkeyAuth = PasskeyAuth(configuration: configuration)
