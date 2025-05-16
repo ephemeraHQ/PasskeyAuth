@@ -95,6 +95,8 @@ public actor PasskeyAuth {
 
         defer { self.setAuthenticating(false) }
 
+        setAuthenticating(true)
+
         guard var urlComponents = URLComponents(string: "\(configuration.baseURL)\(configuration.endpoints.registerChallenge)") else {
             throw PasskeyError.invalidURL("Failed to create URL components for registration challenge")
         }
@@ -151,8 +153,6 @@ public actor PasskeyAuth {
         controller.presentationContextProvider = presentationContextProvider
         let asyncController = AsyncAuthorizationController(controller: controller)
 
-        setAuthenticating(true)
-
         do {
             let authResponse = try await asyncController.performRequests()
             switch authResponse {
@@ -191,6 +191,8 @@ public actor PasskeyAuth {
         }
 
         defer { self.setAuthenticating(false) }
+
+        setAuthenticating(true)
 
         guard let url = URL(string: "\(configuration.baseURL)\(configuration.endpoints.loginChallenge)") else {
             throw PasskeyError.invalidURL("Failed to create URL for login challenge")
@@ -235,8 +237,6 @@ public actor PasskeyAuth {
         let controller = ASAuthorizationController(authorizationRequests: [request])
         controller.presentationContextProvider = presentationContextProvider
         let asyncController = AsyncAuthorizationController(controller: controller)
-
-        setAuthenticating(true)
 
         do {
             let authResponse = try await asyncController.performRequests()
