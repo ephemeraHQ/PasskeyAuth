@@ -229,11 +229,11 @@ public actor PasskeyAuth {
         }
 
         let provider = ASAuthorizationPlatformPublicKeyCredentialProvider(
-            relyingPartyIdentifier: self.configuration.rpID
+            relyingPartyIdentifier: configuration.rpID
         )
 
         let request = provider.createCredentialAssertionRequest(challenge: challengeData)
-        request.userVerificationPreference = self.configuration.userVerificationPreference
+        request.userVerificationPreference = configuration.userVerificationPreference
 
         let controller = ASAuthorizationController(authorizationRequests: [request])
         controller.presentationContextProvider = presentationContextProvider
@@ -255,6 +255,24 @@ public actor PasskeyAuth {
             }
         } catch {
             throw PasskeyError.authenticationFailed("Login failed")
+        }
+    }
+
+    public func sign(challenge: Data) async throws -> ASAuthorizationPlatformPublicKeyCredentialAssertion {
+        let provider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: configuration.rpID)
+        let request = provider.createCredentialAssertionRequest(challenge: challenge)
+
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        controller.presentationContextProvider = presentationContextProvider
+        let asyncController = AsyncAuthorizationController(controller: controller)
+        do {
+            let authResponse = try await asyncController.performRequests()
+            switch authResponse {
+            case .assertion(let assertion):
+                return assertion
+            default:
+                throw PasskeyError.signingFailed("Unexpected sign response")
+            }
         }
     }
 

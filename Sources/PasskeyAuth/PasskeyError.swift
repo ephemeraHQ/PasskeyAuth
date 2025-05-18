@@ -10,7 +10,10 @@ public enum PasskeyError: LocalizedError {
     
     /// The challenge received from the server is invalid
     case invalidChallenge(String)
-    
+
+    /// Signing the message failed
+    case signingFailed(String)
+
     /// The authentication failed
     case authenticationFailed(String)
     
@@ -52,6 +55,8 @@ public enum PasskeyError: LocalizedError {
             return "No data was received from the server"
         case .invalidChallenge(let details):
             return Self.includeDebugInfo ? "The challenge received from the server is invalid: \(details)" : "The challenge received from the server is invalid"
+        case .signingFailed(let details):
+            return Self.includeDebugInfo ? "The signing of the message failed: \(details)" : "The signing of the message failed"
         case .authenticationFailed(let details):
             return Self.includeDebugInfo ? "The authentication failed: \(details)" : "The authentication failed"
         case .registrationFailed(let details):
@@ -92,6 +97,8 @@ public enum PasskeyError: LocalizedError {
             return "Please try the operation again"
         case .authenticationFailed:
             return "Please verify your credentials and try again"
+        case .signingFailed:
+            return "Please try again"
         case .registrationFailed:
             return "Please try registering again with a different display name"
         case .authenticationInProgress:
@@ -116,7 +123,7 @@ public enum PasskeyError: LocalizedError {
             return true
         case .invalidURL, .noData, .invalidChallenge, .authenticationFailed,
              .registrationFailed, .authenticationInProgress, .jsonParsingError,
-             .configurationError:
+             .configurationError, .signingFailed:
             return false
         }
     }
