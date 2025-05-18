@@ -172,9 +172,10 @@ struct ContentView: View {
         
         Task {
             do {
-                let response = try await passkeyAuth.registerPasskey(displayName: displayName)
+                let (registration, response) = try await passkeyAuth.registerPasskey(displayName: displayName)
                 logger.info("Registration Success:")
                 logger.debug("Success: \(response.success)")
+                logger.debug("Registration: \(registration)")
                 logger.debug("Token: \(response.token)")
                 isRegistered = true
                 errorMessage = "Registration successful!"
@@ -193,8 +194,9 @@ struct ContentView: View {
         
         Task {
             do {
-                let response = try await passkeyAuth.loginWithPasskey()
+                let (assertion, response) = try await passkeyAuth.loginWithPasskey()
                 logger.info("Login Success:")
+                logger.debug("Assertion: \(assertion)")
                 logger.debug("Success: \(response.success)")
                 logger.debug("Token: \(response.token)")
                 errorMessage = "Login successful!"

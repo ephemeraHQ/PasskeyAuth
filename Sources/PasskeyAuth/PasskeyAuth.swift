@@ -82,7 +82,8 @@ public actor PasskeyAuth {
     /// - Parameter displayName: The display name for the passkey
     /// - Returns: A PasskeyResponse containing the registration result
     /// - Throws: Various PasskeyError cases if registration fails
-    public func registerPasskey(displayName: String) async throws -> PasskeyResponse {
+    public func registerPasskey(displayName: String) async throws -> (
+        ASAuthorizationPlatformPublicKeyCredentialRegistration, PasskeyResponse) {
         try checkRateLimit()
 
         guard let presentationContextProvider = presentationContextProvider else {
@@ -166,8 +167,7 @@ public actor PasskeyAuth {
                     attestationObject: rawAttestationObject,
                     clientDataJSON: registration.rawClientDataJSON
                 )
-                return response
-                //                    continuation.resume(returning: response)
+                return (registration, response)
             case .assertion:
                 throw PasskeyError.registrationFailed("Unexpected assertion response")
             }
@@ -179,7 +179,8 @@ public actor PasskeyAuth {
     /// Logs in with a passkey
     /// - Returns: A PasskeyResponse containing the login result
     /// - Throws: Various PasskeyError cases if login fails
-    public func loginWithPasskey() async throws -> PasskeyResponse {
+    public func loginWithPasskey() async throws -> (
+        ASAuthorizationPlatformPublicKeyCredentialAssertion, PasskeyResponse) {
         try checkRateLimit()
 
         guard let presentationContextProvider = presentationContextProvider else {
@@ -248,7 +249,7 @@ public actor PasskeyAuth {
                     clientDataJSON: assertion.rawClientDataJSON,
                     signature: assertion.signature
                 )
-                return response
+                return (assertion, response)
             case .registration:
                 throw PasskeyError.authenticationFailed("Unexpected registration response")
             }
